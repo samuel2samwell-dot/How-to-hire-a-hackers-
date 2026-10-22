@@ -66,7 +66,72 @@ function renderBlog(){const q=document.getElementById("blogSearch").value.toLowe
 function openArticle(id){const p=allPosts().find(x=>x.id===id);if(!p)return;const content=(p.body||p.excerpt||"").replace(/\\n\\n/g,"\n\n");const modal=document.createElement("dialog");modal.className="article-dialog";modal.innerHTML=`<form method="dialog" class="dialog-close"><button aria-label="Close article">×</button></form><span class="tag">${esc(p.category||"Community")}</span><h2>${esc(p.title)}</h2><p class="dialog-byline">By ${esc(p.author||"Community contributor")}</p><div class="dialog-body">${content.split("\n\n").map(x=>`<p>${esc(x)}</p>`).join("")}</div>`;document.body.append(modal);modal.showModal();modal.addEventListener("close",()=>modal.remove())}
 document.getElementById("blogSearch").addEventListener("input",renderBlog);
 // Article submissions use the external review form in index.html; do not intercept its POST.
-// Consultation enquiries are submitted securely through the configured FormSubmit endpoint.
+// Consultation enquiries are sent to Supabase using a browser-safe publishable key.
+// Keep database access restricted with the INSERT-only grants and RLS policy in supabase/contact_submissions.sql.
+const contactForm = document.getElementById("contactForm");
+if (contactForm) {
+  const contactStatus = document.getElementById("contactStatus");
+  const submitButton = contactForm.querySelector('button[type="submit"]');
+  contactForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!contactForm.reportValidity()) return;
+
+    const fields = new FormData(contactForm);
+    // Quietly discard automated submissions that fill the hidden honeypot.
+    if (String(fields.get("website") || "").trim()) {
+      contactForm.reset();
+      if (contactStatus) contactStatus.textContent = "Thank you. Your enquiry has been received.";
+      return;
+    }
+
+    const payload = {
+      name: String(fields.get("name") || "").trim(),
+      email: String(fields.get("email") || "").trim(),
+      service: String(fields.get("service") || "").trim(),
+      message: String(fields.get("message") || "").trim(),
+      consent: fields.get("consent") === "I understand that work requires a lawful basis and agreed scope"
+    };
+
+    if (!payload.consent) {
+      if (contactStatus) contactStatus.textContent = "Please confirm the lawful-scope statement before submitting.";
+      return;
+    }
+    if (payload.name.length > 120 || payload.email.length > 254 ||
+        payload.service.length > 100 || payload.message.length > 2000) {
+      if (contactStatus) contactStatus.textContent = "Please shorten one or more fields and try again.";
+      return;
+    }
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.setAttribute("aria-busy", "true");
+    }
+    if (contactStatus) contactStatus.textContent = "Sending your enquiry securely…";
+
+    try {
+      const response = await fetch("https://xoptbtvgfenusohvqorh.supabase.co/rest/v1/contact_submissions", {
+        method: "POST",
+        headers: {
+          "apikey": "sb_publishable_NaxReTM6a36c0f1du20pXg_3sjwQgqg",
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) throw new Error("Submission rejected");
+
+      contactForm.reset();
+      if (contactStatus) contactStatus.textContent = "Thank you. Your enquiry has been received. Our team will review it and follow up using the email you provided.";
+    } catch (_error) {
+      if (contactStatus) contactStatus.textContent = "We couldn't submit your enquiry just now. Please try again or email support@zenithhackers.com directly.";
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.removeAttribute("aria-busy");
+      }
+    }
+  });
+}
 const menuToggle=document.getElementById("menuToggle"),nav=document.getElementById("mainNav");menuToggle.addEventListener("click",()=>{const open=nav.classList.toggle("open");menuToggle.setAttribute("aria-expanded",String(open))});nav.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{nav.classList.remove("open");menuToggle.setAttribute("aria-expanded","false")}));
 const panel=document.getElementById("chatPanel");document.getElementById("chatOpen").addEventListener("click",()=>{panel.hidden=false;document.getElementById("chatInput").focus()});document.getElementById("chatClose").addEventListener("click",()=>panel.hidden=true);
 function botReply(text){const t=text.toLowerCase();if(/crypto|bitcoin|wallet|blockchain/.test(t))return "Our crypto investigation information covers public blockchain transaction analysis and evidence organization. A wallet address does not prove a person's identity, and recovery is never guaranteed. Preserve transaction IDs and report scams to your exchange and relevant authorities.";if(/hack|penetration|security test|password|account/.test(t))return "We only support security work on systems you own or are explicitly authorized to test. A responsible assessment uses written scope, agreed test windows, safe data handling and a report with practical fixes. We cannot help access someone else's account.";if(/private investigator|investigation|trace|asset/.test(t))return "Investigation support can include lawful public-source research, timelines and evidence organization. Methods and scope must be agreed in advance, and findings are reported with limitations. Use the contact form to request a consultation.";if(/price|cost|quote|contact|email|phone/.test(t))return "For a consultation, use the contact form or email support@zenithhackers.com. Include a high-level description only—please do not send passwords, seed phrases or sensitive evidence.";if(/privacy|data/.test(t))return "Protect sensitive information and share only what is needed. This website demo does not send blog comments to a server; comments and submissions are stored in this browser. A production launch needs a privacy notice and secure backend.";return "I can explain ethical security testing, lawful investigation support, crypto evidence basics or how to contact the team. This is a local demo assistant, not a live AI service. What topic would you like to explore?"}
