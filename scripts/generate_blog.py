@@ -16,7 +16,7 @@ cats={
 angles=["A practical checklist","A beginner guide","Common mistakes to avoid","Questions to ask a professional","How to document your findings","A risk-based approach","What records can and cannot show","Planning a responsible review","How to evaluate evidence","A step-by-step overview"]
 def slug(s): return re.sub(r"[^a-z0-9]+","-",s.lower()).strip("-")
 def e(s): return html.escape(s,quote=True)
-def page(title,cat,topic,slug,n):
+def page(title,cat,topic,slug,n,include_service_guidance=False):
  desc="Practical guidance on "+topic+", evidence quality, responsible research, legal scope and privacy."
  paras=[
  "Start by defining the question you need answered, the decision it supports, and the records you are lawfully entitled to access. A narrow written scope keeps research proportionate and makes conclusions easier to review. Identify the intended audience and the standard of evidence needed before collecting material.",
@@ -28,15 +28,18 @@ def page(title,cat,topic,slug,n):
  ]
  sections=["Understand the scope","Collect and preserve records","Interpret evidence carefully","Use a repeatable process","Avoid common risks","Choose qualified help"]
  body="".join("<h2>"+e(h)+"</h2><p>"+e(p)+"</p>" for h,p in zip(sections,paras))
- service_notes = {
-  "Hire a Hacker": "We can discuss authorized security testing for systems you own or have permission to test, including written scope, approved targets, safe test windows, prioritized findings and remediation guidance. Choose a provider that protects sensitive data and explains limitations; no assessment guarantees every weakness will be found.",
-  "Private Investigator": "Lawful support may include open-source research, public-record checks, source verification, digital evidence organization and case chronologies. We help separate sourced facts from leads and document uncertainty so clients and qualified advisers can assess next steps. Findings are not guaranteed.",
-  "News": "This series explains responsible cybersecurity, online fraud awareness, digital evidence and investigation practices. It aims to help readers understand common risks and practical next steps without sensational claims. Active security testing always requires explicit authorization.",
-  "Asset Tracing": "Lawful asset research may review public corporate filings, property records, court documents and other accessible sources to develop leads for verification. We organize records, dates and source notes, distinguish leads from proven ownership, and do not access private accounts or guarantee recovery.",
-  "Crypto Investigations": "Support may include public blockchain transaction review, transaction-ID preservation, wallet-flow timelines and organizing scam-related records for exchanges, authorities or qualified counsel. A wallet address alone does not establish identity, and tracing or recovery is never guaranteed."
- }
- service_text = service_notes.get(cat, "We can discuss lawful research, digital evidence organization or explicitly authorized security testing relevant to this topic. Work must be agreed in writing and comply with applicable law. No result or recovery is guaranteed.")
- body += "<h2>How Zenith Hackers can assist</h2><p>" + e(service_text) + "</p><h2>Why choose an evidence-led approach</h2><p>Ask any provider about written scope, lawful basis, methodology, confidentiality, data retention, reporting format, fees and limitations. A responsible team should never request passwords, seed phrases, private keys or one-time codes.</p>"
+ if include_service_guidance:
+  service_notes = {
+   "Hire a Hacker": "We can discuss authorized security testing for systems you own or have permission to test, including written scope, approved targets, safe test windows, prioritized findings and remediation guidance. Choose a provider that protects sensitive data and explains limitations; no assessment guarantees every weakness will be found.",
+   "Private Investigator": "Lawful support may include open-source research, public-record checks, source verification, digital evidence organization and case chronologies. We help separate sourced facts from leads and document uncertainty so clients and qualified advisers can assess next steps. Findings are not guaranteed.",
+   "News": "This series explains responsible cybersecurity, online fraud awareness, digital evidence and investigation practices. It aims to help readers understand common risks and practical next steps without sensational claims. Active security testing always requires explicit authorization.",
+   "Asset Tracing": "Lawful asset research may review public corporate filings, property records, court documents and other accessible sources to develop leads for verification. We organize records, dates and source notes, distinguish leads from proven ownership, and do not access private accounts or guarantee recovery.",
+   "Crypto Investigations": "Support may include public blockchain transaction review, transaction-ID preservation, wallet-flow timelines and organizing scam-related records for exchanges, authorities or qualified counsel. A wallet address alone does not establish identity, and tracing or recovery is never guaranteed."
+  }
+  service_text = service_notes.get(cat, "We can discuss lawful research, digital evidence organization or explicitly authorized security testing relevant to this topic. Work must be agreed in writing and comply with applicable law. No result or recovery is guaranteed.")
+  body += "<h2>How Zenith Hackers can assist</h2><p>" + e(service_text) + "</p><h2>Why choose an evidence-led approach</h2><p>Ask any provider about written scope, lawful basis, methodology, confidentiality, data retention, reporting format, fees and limitations. A responsible team should never request passwords, seed phrases, private keys or one-time codes.</p>"
+ else:
+  body += "<h2>Discuss your situation</h2><p>Zenith Hackers can discuss whether lawful research, public-source analysis, digital evidence organization, public blockchain analysis or explicitly authorized security testing fits your situation. Any work should be agreed in writing and comply with applicable law. No result or asset recovery is guaranteed.</p>"
  canonical=base+"/blog/"+slug+"/"
  schema=json.dumps({"@context":"https://schema.org","@type":"Article","headline":title,"description":desc,"datePublished":date.today().isoformat(),"author":{"@type":"Organization","name":"Zenith Hackers"},"mainEntityOfPage":canonical})
  return """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>"""+e(title)+""" | Zenith Hackers</title><meta name="description" content=\""""+e(desc)+"""\"><link rel="canonical" href=\""""+canonical+"""\"><script type="application/ld+json">"""+schema+"""</script><style>body{margin:0;background:#0b1220;color:#e9eef8;font:17px/1.75 system-ui}header,main,footer{max-width:850px;margin:auto;padding:24px}a{color:#63e6be}header{border-bottom:1px solid #26334a}h1{font-size:clamp(2rem,5vw,3.3rem);line-height:1.15}h2{margin-top:2em;color:#a7f3d0}article{background:#111b2e;border:1px solid #26334a;border-radius:18px;padding:clamp(20px,4vw,42px)}.cta{background:#142c35;border:1px solid #2c7467;border-radius:14px;padding:22px;margin-top:28px}</style></head><body><header><a href="../../">ZENITH HACKERS · INTELLIGENCE</a><p><a href="../../">Home</a> / <a href="../../blog/">Blog</a> / """+e(cat)+"""</p></header><main><article><p><strong>"""+e(cat)+"""</strong> · Guide """+str(n)+"""</p><h1>"""+e(title)+"""</h1><p>"""+e(desc)+"""</p>"""+body+"""<div class="cta"><h2>Need help with a lawful investigation?</h2><p>Contact Zenith Hackers to discuss lawful research and authorized security work. Never send passwords, seed phrases, private keys or one-time codes.</p><p><a href="../../#contact">Request a consultation</a> · <a href="mailto:support@zenithhackers.com">support@zenithhackers.com</a></p></div></article><section class="public-comments"><h2>Public comments &amp; reviews</h2><p>Comments are public. Sign in with GitHub if prompted; please never post passwords, seed phrases or private keys.</p><script src="https://utteranc.es/client.js" repo="samuel2samwell-dot/How-to-hire-a-hackers-" issue-term="pathname" label="public-feedback" theme="github-dark" crossorigin="anonymous" async></script></section></main><footer><a href="/#contact">Contact</a> · <a href="/blog/">All articles</a> · Educational information only.</footer></body></html>"""
@@ -95,7 +98,7 @@ for cat, cfg in extra_series.items():
         sl = slug(title + " " + str(n))
         d = blog / sl
         d.mkdir(parents=True, exist_ok=True)
-        d.joinpath("index.html").write_text(page(title, cat, topic, sl, n), encoding="utf-8")
+        d.joinpath("index.html").write_text(page(title, cat, topic, sl, n, include_service_guidance=True), encoding="utf-8")
         items.append({
           "title": title, "category": cat, "topic": topic, "slug": sl, "url": sl + "/",
           "description": f"Guidance on {topic}, lawful scope, evidence quality, privacy and practical next steps."
