@@ -40,9 +40,62 @@ for cat,topics in cats.items():
   n+=1;topic=topics[i%len(topics)];title=angles[(i//len(topics))%len(angles)]+": "+topic.title()+" — "+cat; sl=slug(title+" "+str(n))
   d=blog/sl;d.mkdir(parents=True,exist_ok=True);(d/"index.html").write_text(page(title,cat,topic,sl,n),encoding="utf-8")
   items.append({"title":title,"category":cat,"topic":topic,"slug":sl,"url":sl+"/","description":"Practical guidance on "+topic+", evidence quality, responsible research and privacy."})
+
+# Additional section-specific series requested for the homepage. The original 1,000 guides above remain intact.
+extra_series = {
+ "Hire a Hacker": {
+  "count": 1000,
+  "topics": ["authorized penetration testing","web application security review","network security assessment","cloud configuration review","API security testing","identity and access review","vulnerability validation","red-team exercise planning","security remediation roadmap","penetration-test reporting","rules of engagement","safe test environments","responsible disclosure","multifactor authentication review","external attack-surface review","secure configuration testing","security regression testing","third-party security assessment","incident-readiness review","ethical hacker selection","data protection during testing","critical finding escalation","test evidence handling","post-remediation retesting","business risk prioritization"]
+ },
+ "Private Investigator": {
+  "count": 1000,
+  "topics": ["lawful digital evidence research","public-record investigation","online identity verification","case chronology building","open-source intelligence review","evidence preservation planning","business due diligence","fraud indicator documentation","investigation report writing","privacy-aware research","source reliability assessment","cross-border research coordination","digital impersonation research","document authenticity checks","missing-information analysis","investigator engagement planning","lawful background research","evidence corroboration","timeline inconsistency review","professional referral coordination","confidentiality safeguards","case scope definition","public profile verification","record retention planning","investigative limitations","responsible client communication"]
+ },
+ "News": {
+  "count": 1500,
+  "topics": ["ethical hacking trends","security advisory analysis","responsible vulnerability disclosure","phishing campaign indicators","data breach lessons","privacy and digital evidence","incident response readiness","ransomware prevention practices","cloud security misconfigurations","identity theft prevention","blockchain scam warnings","cybersecurity governance","software patch prioritization","supply-chain security","multifactor authentication adoption","digital forensics fundamentals","public blockchain transparency","online fraud reporting","security testing standards","AI-enabled scam awareness","account takeover prevention","small-business security","vendor risk management","security awareness programs","evidence preservation after scams","safe incident communications","data minimization practices","authorized penetration testing","regulatory reporting preparation","security metrics for leaders"]
+ },
+ "Asset Tracing": {
+  "count": 900,
+  "topics": ["public-record asset research","corporate ownership records","beneficial ownership leads","court record review","property record verification","business affiliation analysis","lawful asset intelligence","cross-border records research","source corroboration","asset timeline construction","entity name matching","ownership uncertainty assessment","fraud-related record preservation","due diligence workflows","public filing interpretation","asset research report writing","evidence chain documentation","professional recovery referrals","research scope planning","asset recovery expectation setting","corporate registry checks","legal process coordination","record freshness verification","transaction record organization","risk indicator analysis"]
+ },
+ "Crypto Investigations": {
+  "count": 800,
+  "topics": ["public blockchain transaction tracing","wallet address evidence","crypto scam documentation","transaction timeline analysis","exchange reporting preparation","cross-chain movement review","blockchain attribution limitations","wallet clustering caveats","transaction identifier preservation","token transfer analysis","bridge transaction review","crypto impersonation scams","fraud communications preservation","public ledger research","on-chain evidence snapshots","exchange compliance referrals","crypto recovery scam warnings","case chronology for digital assets","transaction fee interpretation","blockchain analytics quality checks","wallet label verification","lawful evidence sharing","crypto incident response","address reuse indicators","digital asset investigation reports"]
+ }
+}
+extra_angles = [
+ "A practical field guide","A responsible workflow","Questions to ask before starting",
+ "Common pitfalls and safer alternatives","How to assess the evidence","A checklist for decision-makers",
+ "What professionals should explain","A step-by-step planning guide","How to document findings",
+ "A risk-based approach","How to protect privacy","What the records can establish",
+ "How to prepare a useful report","A guide for organizations","A guide for individuals",
+ "How to compare service providers","What to verify independently","A guide to scope and limitations",
+ "How to plan next steps","A quality-control checklist","A guide to lawful assistance",
+ "How to avoid unsupported conclusions","A guide to preserving context","What responsible practice looks like",
+ "How to organize a case file","A guide to clear communication","How to evaluate uncertainty",
+ "A guide to practical safeguards","What to discuss in a consultation","How to build a defensible timeline"
+]
+for cat, cfg in extra_series.items():
+    topics = cfg["topics"]
+    for i in range(cfg["count"]):
+        n += 1
+        topic = topics[i % len(topics)]
+        angle = extra_angles[(i // len(topics)) % len(extra_angles)]
+        cycle = i // (len(topics) * len(extra_angles))
+        title = f"{angle}: {topic.title()} — {cat}" + (f" (Part {cycle + 2})" if cycle else "")
+        sl = slug(title + " " + str(n))
+        d = blog / sl
+        d.mkdir(parents=True, exist_ok=True)
+        d.joinpath("index.html").write_text(page(title, cat, topic, sl, n), encoding="utf-8")
+        items.append({
+          "title": title, "category": cat, "topic": topic, "slug": sl, "url": sl + "/",
+          "description": f"Guidance on {topic}, lawful scope, evidence quality, privacy and practical next steps."
+        })
+
 (blog/"articles.json").write_text(json.dumps(items,ensure_ascii=False),encoding="utf-8")
 options="".join('<option>'+e(c)+'</option>' for c in cats)
-(blog/"index.html").write_text("""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Blog | Zenith Hackers</title><meta name="description" content="Browse 1,000 guides on cybersecurity, investigations, blockchain intelligence and privacy."><style>body{margin:0;background:#0b1220;color:#e9eef8;font:16px/1.6 system-ui}header,main,footer{max-width:1100px;margin:auto;padding:24px}a{color:#63e6be}h1{font-size:clamp(2.5rem,6vw,4rem)}input,select,button{padding:12px;border-radius:9px;border:1px solid #35445c;background:#111b2e;color:white}.controls{display:flex;gap:10px;flex-wrap:wrap}.controls input{flex:1;min-width:220px}#results{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:26px 0}.card{padding:20px;background:#111b2e;border:1px solid #26334a;border-radius:14px}.pager{display:flex;gap:12px;justify-content:center}footer{color:#aab7ca}</style></head><body><header><a href="/">← Zenith Hackers home</a><h1>Insights & Guides</h1><p>1,000 educational articles across ten categories.</p></header><main><div class="controls"><input id="q" type="search" placeholder="Search articles"><select id="cat"><option value="">All categories</option>"""+options+"""</select></div><p id="count"></p><div id="results"></div><div class="pager"><button id="prev">Previous</button><span id="page"></span><button id="next">Next</button></div></main><footer>Educational information only. Contact <a href="mailto:support@zenithhackers.com">Zenith Hackers</a>. Never share passwords or crypto recovery phrases.</footer><script src="blog.js"></script></body></html>""",encoding="utf-8")
+(blog/"index.html").write_text("""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Blog | Zenith Hackers</title><meta name="description" content="Browse 6,200 guides on ethical hacking, investigations, news, asset tracing, crypto and privacy."><style>body{margin:0;background:#0b1220;color:#e9eef8;font:16px/1.6 system-ui}header,main,footer{max-width:1100px;margin:auto;padding:24px}a{color:#63e6be}h1{font-size:clamp(2.5rem,6vw,4rem)}input,select,button{padding:12px;border-radius:9px;border:1px solid #35445c;background:#111b2e;color:white}.controls{display:flex;gap:10px;flex-wrap:wrap}.controls input{flex:1;min-width:220px}#results{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:26px 0}.card{padding:20px;background:#111b2e;border:1px solid #26334a;border-radius:14px}.pager{display:flex;gap:12px;justify-content:center}footer{color:#aab7ca}</style></head><body><header><a href="/">← Zenith Hackers home</a><h1>Insights & Guides</h1><p>6,200 educational articles across fifteen categories.</p></header><main><div class="controls"><input id="q" type="search" placeholder="Search articles"><select id="cat"><option value="">All categories</option>"""+options+"""</select></div><p id="count"></p><div id="results"></div><div class="pager"><button id="prev">Previous</button><span id="page"></span><button id="next">Next</button></div></main><footer>Educational information only. Contact <a href="mailto:support@zenithhackers.com">Zenith Hackers</a>. Never share passwords or crypto recovery phrases.</footer><script src="blog.js"></script></body></html>""",encoding="utf-8")
 (blog/"blog.js").write_text("""(async function(){const data=await fetch('articles.json').then(r=>r.json());const q=document.querySelector('#q'),cat=document.querySelector('#cat'),res=document.querySelector('#results'),count=document.querySelector('#count'),label=document.querySelector('#page'),prev=document.querySelector('#prev'),next=document.querySelector('#next');let page=1;function render(){const term=q.value.trim().toLowerCase(),arr=data.filter(a=>(!cat.value||a.category===cat.value)&&(!term||(a.title+' '+a.category+' '+a.topic+' '+a.description).toLowerCase().includes(term))),pages=Math.max(1,Math.ceil(arr.length/18));page=Math.min(page,pages);res.innerHTML=arr.slice((page-1)*18,page*18).map(a=>'<article class="card"><small>'+a.category+'</small><h2><a href="'+a.url+'">'+a.title+'</a></h2><p>'+a.description+'</p><a href="'+a.url+'">Read guide →</a></article>').join('')||'<p>No matching articles.</p>';count.textContent=arr.length+' articles found';label.textContent='Page '+page+' of '+pages;prev.disabled=page<=1;next.disabled=page>=pages}q.addEventListener('input',()=>{page=1;render()});cat.addEventListener('change',()=>{page=1;render()});prev.onclick=()=>{page--;render();scrollTo(0,0)};next.onclick=()=>{page++;render();scrollTo(0,0)};render()})().catch(()=>document.querySelector('#results').textContent='Articles temporarily unavailable. Reload the page.')""",encoding="utf-8")
 urls=[base+"/",base+"/blog/"]+[base+"/blog/"+a["slug"]+"/" for a in items]
 Path("sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+"\n".join("<url><loc>"+html.escape(u)+"</loc></url>" for u in urls)+"\n</urlset>\n",encoding="utf-8")
