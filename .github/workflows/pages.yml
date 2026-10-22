@@ -22,6 +22,27 @@ jobs:
       - uses: actions/configure-pages@v5
       - name: Generate 1,000 original + 5,200 additional article pages
         run: python3 scripts/generate_blog.py
+      - name: Validate sitemap and robots.txt
+        run: |
+          python3 - <<'PY'
+          import json
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          base = "https://samuel2samwell-dot.github.io/How-to-hire-a-hackers-"
+          namespace = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+          root = ET.parse("sitemap.xml").getroot()
+          urls = [node.text for node in root.findall("sm:url/sm:loc", namespace)]
+          articles = json.loads(Path("blog/articles.json").read_text(encoding="utf-8"))
+          expected = {base + "/", base + "/blog/"} | {
+              base + "/blog/" + article["slug"] + "/" for article in articles
+          }
+          assert len(urls) == len(set(urls)), "Sitemap contains duplicate URLs"
+          assert set(urls) == expected, f"Sitemap mismatch: expected {len(expected)} URLs, got {len(urls)}"
+          robots = Path("robots.txt").read_text(encoding="utf-8")
+          assert "Sitemap: " + base + "/sitemap.xml" in robots, "robots.txt does not declare sitemap"
+          print(f"Validated {len(urls)} canonical page URLs in sitemap.xml")
+          PY
       - uses: actions/upload-pages-artifact@v3
         with:
           path: "."
