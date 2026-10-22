@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      - name: Generate 1,000 article pages
+      - name: Generate 6,200 article pages
         run: python3 scripts/generate_blog.py
       - uses: actions/upload-pages-artifact@v3
         with:
