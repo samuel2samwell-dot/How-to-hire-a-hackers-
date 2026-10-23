@@ -64,7 +64,88 @@ function excerpt(s,n=150){return s.length>n?s.slice(0,n).trim()+"…":s}
 function renderFeatured(){const target=document.getElementById("featuredPosts");target.innerHTML=posts.slice(0,3).map(p=>`<article class="featured-card"><span class="tag">${esc(p.category)}</span><h3>${esc(p.title)}</h3><p>${esc(excerpt(p.excerpt,130))}</p><a href="#blog" data-search="${esc(p.title)}">Read insight ↗</a></article>`).join("");target.querySelectorAll("a[data-search]").forEach(a=>a.addEventListener("click",()=>{document.getElementById("blogSearch").value=a.dataset.search;renderBlog()}))}
 function renderBlog(){const q=document.getElementById("blogSearch").value.toLowerCase().trim();const target=document.getElementById("blogGrid");const list=allPosts().filter(p=>(p.title+" "+p.excerpt+" "+p.category).toLowerCase().includes(q));if(!list.length){target.innerHTML='<p>No articles match that search. Try another phrase.</p>';return}target.innerHTML=list.map(p=>{const community=readCommunity();return `<article class="blog-card"><span class="tag">${esc(p.category||"Community")}</span><h3>${esc(p.title)}</h3><p>${esc(excerpt(p.excerpt||p.body||"",155))}</p><button class="read-more" data-read="${esc(p.id)}">Read article ↗</button><p class="public-comment-note"><a href="https://github.com/samuel2samwell-dot/How-to-hire-a-hackers-/issues">Public comments &amp; reviews ↗</a></p></article>`}).join("");target.querySelectorAll("[data-read]").forEach(b=>b.addEventListener("click",()=>openArticle(b.dataset.read)));target.querySelectorAll(".comment-form").forEach(f=>f.addEventListener("submit",e=>{e.preventDefault();const fd=new FormData(f);const c=readCommunity();c.comments=c.comments||{};c.comments[f.dataset.comment]=c.comments[f.dataset.comment]||[];c.comments[f.dataset.comment].push({name:fd.get("name").trim(),body:fd.get("body").trim(),date:new Date().toISOString()});writeCommunity(c);renderBlog()}))}
 function openArticle(id){const p=allPosts().find(x=>x.id===id);if(!p)return;const content=(p.body||p.excerpt||"").replace(/\\n\\n/g,"\n\n");const modal=document.createElement("dialog");modal.className="article-dialog";modal.innerHTML=`<form method="dialog" class="dialog-close"><button aria-label="Close article">×</button></form><span class="tag">${esc(p.category||"Community")}</span><h2>${esc(p.title)}</h2><p class="dialog-byline">By ${esc(p.author||"Community contributor")}</p><div class="dialog-body">${content.split("\n\n").map(x=>`<p>${esc(x)}</p>`).join("")}</div>`;document.body.append(modal);modal.showModal();modal.addEventListener("close",()=>modal.remove())}
+
 document.getElementById("blogSearch").addEventListener("input",renderBlog);
+
+// Anonymous visitor comments. Run supabase/visitor_comments.sql once before enabling this feature.
+const visitorCommentForm = document.getElementById("visitorCommentForm");
+if (visitorCommentForm) {
+  const commentsStatus = document.getElementById("commentsStatus");
+  const commentsList = document.getElementById("commentsList");
+  const commentsApi = "https://xoptbtvgfenusohvqorh.supabase.co/rest/v1/visitor_comments";
+  const publicKey = "sb_publishable_NaxReTM6a36c0f1du20pXg_3sjwQgqg";
+  const commentHeaders = { apikey: publicKey, "Content-Type": "application/json" };
+  const pageUrl = window.location.pathname;
+
+  function showVisitorComments(rows) {
+    commentsList.replaceChildren();
+    if (!rows.length) {
+      const empty = document.createElement("p");
+      empty.className = "form-status";
+      empty.textContent = "No approved comments yet. Be the first to join the discussion.";
+      commentsList.append(empty);
+      return;
+    }
+    rows.forEach((row) => {
+      const article = document.createElement("article");
+      article.className = "visitor-comment";
+      const heading = document.createElement("h4");
+      heading.textContent = row.display_name;
+      const date = document.createElement("p");
+      date.className = "comment-date";
+      date.textContent = new Date(row.created_at).toLocaleDateString();
+      const body = document.createElement("p");
+      body.textContent = row.comment;
+      article.append(heading, date, body);
+      commentsList.append(article);
+    });
+  }
+
+  async function loadVisitorComments() {
+    try {
+      const url = commentsApi + "?select=id,created_at,display_name,comment&approved=eq.true&page_url=eq." + encodeURIComponent(pageUrl) + "&order=created_at.desc&limit=100";
+      const response = await fetch(url, { headers: { apikey: publicKey } });
+      if (!response.ok) throw new Error("Unable to load comments");
+      showVisitorComments(await response.json());
+      if (commentsStatus) commentsStatus.textContent = "";
+    } catch (_error) {
+      if (commentsStatus) commentsStatus.textContent = "Comments are temporarily unavailable. Please try again later.";
+    }
+  }
+
+  visitorCommentForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!visitorCommentForm.reportValidity()) return;
+    const fields = new FormData(visitorCommentForm);
+    if (String(fields.get("website") || "").trim()) return;
+    const displayName = String(fields.get("display_name") || "").trim();
+    const comment = String(fields.get("comment") || "").trim();
+    if (!displayName || comment.length < 2 || displayName.length > 60 || comment.length > 2000) {
+      if (commentsStatus) commentsStatus.textContent = "Please check your name and comment length.";
+      return;
+    }
+    const button = visitorCommentForm.querySelector('button[type="submit"]');
+    if (button) button.disabled = true;
+    if (commentsStatus) commentsStatus.textContent = "Submitting for moderation…";
+    try {
+      const response = await fetch(commentsApi, {
+        method: "POST",
+        headers: { ...commentHeaders, Prefer: "return=minimal" },
+        body: JSON.stringify({ page_url: pageUrl, display_name: displayName, comment, approved: false })
+      });
+      if (!response.ok) throw new Error("Comment submission failed");
+      visitorCommentForm.reset();
+      if (commentsStatus) commentsStatus.textContent = "Thanks! Your comment was submitted and will appear after moderation.";
+    } catch (_error) {
+      if (commentsStatus) commentsStatus.textContent = "We couldn't submit your comment. The comment service may need to be enabled by the site owner.";
+    } finally {
+      if (button) button.disabled = false;
+    }
+  });
+
+  loadVisitorComments();
+}
+
 // Article submissions use the external review form in index.html; do not intercept its POST.
 // Consultation enquiries are sent to Supabase using a browser-safe publishable key.
 // Keep database access restricted with the INSERT-only grants and RLS policy in supabase/contact_submissions.sql.
